@@ -18,32 +18,54 @@
 
 
 ############## funciones
+$nombre= (Get-WmiObject -Class win32_computersystem).Name
 
 
-function menu {
-Clear-Host
-write-host '##################################################################' `n
-Write-Host '              BIENVENIDO AL SCRIPT DE INFORMACIÓN                     '
-Write-Host `n
-Write-Host '                  © Ismael Morilla - 2021'
-write-host '##################################################################'
 
-Write-Host '1. Información del equipo' 
-Write-Host '2. Información de la red'
-Write-Host '3. Información de los usuarios/grupos'
-Write-Host '4. Revisar logs del sistema'
-Write-Host '5. Recursos compartidos' `n
-[int]$opcion = Read-Host '¿Qué desea realizar?' 
+function red {
+    Clear-Host
+    write-host '########### Análisis de red:' $nombre '#################' `n `n -ForegroundColor Yellow
+
+    ## CONECTIVIDAD DE RED
+    Write-Host '## Conectividad:' -ForegroundColor Yellow
+    $conex= Test-Connection 8.8.8.8 -Quiet
+    if ($conex -eq 'True'){
+        Write-Host 'OK' `n -BackgroundColor Green 
+    }
+    else {
+        Write-Host 'No Ping' `n -BackgroundColor Red
+    }
+
+    ## MOSTRAR LISTADO DE TARJETAS DE RED 
+    Write-Host '## Listado de tarjetas de red' -ForegroundColor Yellow
+    Get-NetAdapter | fl Name, ifOperStatus, MacAddress, DriverInformation, InterfaceDescription
+
+    ## INDEX DE LAS INTERFACES PRINCIPALES (WIFI, ETHERNET)
+    $ether = (Get-NetAdapter | Where-Object {$_.Name -like "Ethernet"}).ifIndex
+    $wifi = (Get-NetAdapter | Where-Object {$_.Name -like "Wi-Fi"}).ifIndex
+
+
+    #TABLA DE RUTA
+
+    ## ETHERNET
+    Write-Host '## Tabla de enrutamiento' `n -ForegroundColor Yellow 
+
+    Write-Host 'ETHERNET' -ForegroundColor Yellow
+    Get-NetRoute -InterfaceIndex $ether | ft DestinationPrefix, NextHop
+
+    ## WIFI
+    Write-Host 'WI-FI' -ForegroundColor Yellow
+    Get-NetRoute -InterfaceIndex $wifi | ft DestinationPrefix, NextHop
+
+
 
 }
-
 
 function equipo {
     clear-host
    
    
     # datos del equipo 
-    $nombre= (Get-WmiObject -Class win32_computersystem).Name
     $archi= (Get-WmiObject -Class win32_operatingsystem).OSArchitecture
     $modelo= (Get-CimInstance -ClassName win32_computersystemproduct).Version
     $marca= (Get-WmiObject -Class win32_computersystem).Manufacturer
@@ -88,13 +110,13 @@ function equipo {
     # datos físicos de las tarjetas de red
     
     #ETHERNET
-    $nombreE= (Get-NetAdapter | Where-Object {$_.Name -eq 'Ethernet'}).Name
-    $descripE= (Get-NetAdapter | Where-Object {$_.Name -eq 'Ethernet'}).InterfaceDescription
-    $macE= (Get-NetAdapter | Where-Object {$_.Name -eq 'Ethernet'}).MacAddress
+    $nombreE= (Get-NetAdapter | Where-Object {$_.Name -like 'Ethernet'}).Name
+    $descripE= (Get-NetAdapter | Where-Object {$_.Name -like 'Ethernet'}).InterfaceDescription
+    $macE= (Get-NetAdapter | Where-Object {$_.Name -like 'Ethernet'}).MacAddress
     #WIFI
-    $nombreW= (Get-NetAdapter | Where-Object {$_.Name -eq 'Wi-Fi'}).Name
-    $descripW= (Get-NetAdapter | Where-Object {$_.Name -eq 'Wi-Fi'}).InterfaceDescription
-    $macW= (Get-NetAdapter | Where-Object {$_.Name -eq 'Wi-Fi'}).MacAddress
+    $nombreW= (Get-NetAdapter | Where-Object {$_.Name -like 'Wi-Fi'}).Name
+    $descripW= (Get-NetAdapter | Where-Object {$_.Name -like 'Wi-Fi'}).InterfaceDescription
+    $macW= (Get-NetAdapter | Where-Object {$_.Name -like 'Wi-Fi'}).MacAddress
 
     
     #MOSTRAR POR PANTALLA LOS DATOS  
@@ -117,18 +139,69 @@ function equipo {
     Write-Host `n
 }
 
+function menu {
+    Clear-Host
+    write-host '##################################################################' `n
+    Write-Host '                   SCRIPT DE INFORMACIÓN                     '
+    Write-Host `n
+    Write-Host '                  © Ismael Morilla - 2021'
+    write-host '##################################################################'
+
+    Write-Host '1. Información del equipo' 
+    Write-Host '2. Información de la red'
+    Write-Host '3. Información de los usuarios/grupos'
+    Write-Host '4. Revisar logs del sistema'
+    Write-Host '5. Recursos compartidos' 
+    Write-Host 'q. Salir' `n
+
+    $opcion = Read-Host '¿Qué desea realizar?'
 
 
-function ejecucion{ 
 
-menu    
+    if ($opcion -eq 'q'){
+        Clear-Host
+        break
+    }
+    elseif ( $opcion -le 5 ) {
+        #SWITCH PARA OPCIONES DEL MENÚ
+        switch ( $opcion ) {
+            1 {equipo}
+            2 {red}
+            3 {usu}
+            4 {log}
+            5 {recursos}
+        }
 
+    }
+    else{
+        while ( $opcion -gt 5 ) {
+            Write-Host 'Opción incorrecta, por favor, introduzca una válida' -BackgroundColor Red -ForegroundColor White
+            $opcion= Read-Host 'Opciones válidas {1-5}'
+
+            # para ver si es menor o igual que 5
+            # SWTICH PARA OPCIONES DEL MENÚ
+            if  ( $opcion -le 5 ) {
+                switch ( $opcion ) {
+                    1 {equipo}
+                    2 {red}
+                    3 {usu}
+                    4 {log}
+                    5 {recursos}
+                }
+            }
+        }
+
+    }
 }
+
+
 
 ############# Ejecución de las funciones
 
 # Posible prueba de paginación una vez que se tengan más datos.
 #ejecucion | Out-Host -Paging
 
-ejecucion
-#Read-Host -Prompt 'Pulse cualquier tecla para salir'
+menu
+
+
+Read-Host -Prompt 'Pulse cualquier tecla para salir'
