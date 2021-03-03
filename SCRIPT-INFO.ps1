@@ -57,7 +57,21 @@ function red {
     Write-Host 'WI-FI' -ForegroundColor Yellow
     Get-NetRoute -InterfaceIndex $wifi | ft DestinationPrefix, NextHop
 
+    ## ESTADO DE LOS PUERTOS
+    $listen=(Get-NetTCPConnection | Where-Object {$_.State -eq 'Listen'}|measure).Count
+    $bound=(Get-NetTCPConnection | Where-Object {$_.State -eq 'Bound'}|measure).Count
+    $estable=(Get-NetTCPConnection | Where-Object {$_.State -eq 'Established'}|measure).Count
+    $timewait=(Get-NetTCPConnection | Where-Object {$_.State -eq 'TimeWait'}|measure).Count
+    $closewait=(Get-NetTCPConnection | Where-Object {$_.State -eq 'CloseWait'}|measure).Count
 
+
+    Write-Host '## Estados de los puertos:' `n -ForegroundColor Yellow 
+    Write-Host 'Escuchando      :' $listen
+    Write-Host 'Establecido     :' $estable
+    Write-Host 'Atado           :' $bound
+    Write-Host 'En espera       :' $timewait
+    Write-Host 'CloseWait       :' $closewait 
+    Write-Host `n
 
 }
 
@@ -196,10 +210,7 @@ function menu {
 
 
 
-############# Ejecución de las funciones
-
-# Posible prueba de paginación una vez que se tengan más datos.
-#ejecucion | Out-Host -Paging
+############# Ejecución del script
 
 menu
 
